@@ -1,59 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
-  --primary: 210 100% 20%;
-  /* #002366 - Navy Blue */
-  --accent: 46 68% 52%;
-  /* #D4AF37 - Gold */
-  --gray-text: 0 0% 33%;
-  /* #555555 - Dark Gray */
-  --background: 0 0% 96%;
-  /* #F5F5F5 - Light Gray */
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
-@layer base {
-  body {
-    @apply bg-background text-foreground;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
 }
 
-/* Custom Animation Classes */
-.gradient-animation {
-  background-size: 200% 200%;
-  animation: gradientMove 5s ease infinite;
-}
-
-@keyframes gradientMove {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-/* Scrollbar customization */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsla(var(--background));
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsla(var(--primary), 0.3);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsla(var(--primary), 0.5);
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
 }

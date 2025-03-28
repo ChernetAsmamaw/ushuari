@@ -1,45 +1,97 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+// File: middleware.ts
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 
-// Create route matchers for protected routes
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isLegalOrgRoute = createRouteMatcher(["/organization(.*)"]);
-const isUserDashboardRoute = createRouteMatcher(["/dashboard(.*)"]);
+// Routes that require specific roles
+const ADMIN_ROUTES = ["/admin(.*)"];
+const LEGAL_ORG_ROUTES = ["/organization(.*)"];
+const USER_ROUTES = ["/dashboard(.*)"];
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId, sessionClaims } = auth();
+// Public routes (accessible without authentication)
+const PUBLIC_ROUTES = [
+  "/",
+  "/about",
+  "/contact",
+  "/privacy-policy",
+  "/terms-of-service",
+];
 
-  // If the user isn't signed in and is trying to access a protected route, redirect to sign-in
-  if (!userId) {
-    if (
-      isAdminRoute(req) ||
-      isLegalOrgRoute(req) ||
-      isUserDashboardRoute(req)
-    ) {
-      const signInUrl = new URL("/sign-in", req.url);
-      // Save the original URL to redirect after sign-in
-      signInUrl.searchParams.set("redirect_url", req.url);
-      return NextResponse.redirect(signInUrl);
-    }
+export async function middleware(request) {
+  const { userId } = getAuth(request);
+  const path = request.nextUrl.pathname;
+
+  // Allow public routes for everyone
+  if (PUBLIC_ROUTES.some((route) => path === route)) {
     return NextResponse.next();
   }
 
-  // RBAC: Check for admin routes
-  if (isAdminRoute(req) && sessionClaims?.metadata?.role !== "admin") {
-    // If not an admin, redirect to the dashboard
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  // Allow auth routes for non-authenticated users
+  if (
+    (path.startsWith("/auth/sign-in") || path.startsWith("/auth/sign-up")) &&
+    !userId
+  ) {
+    return NextResponse.next();
   }
 
-  // RBAC: Check for legal organization routes
-  if (isLegalOrgRoute(req) && sessionClaims?.metadata?.role !== "legal_org") {
-    // If not a legal organization, redirect to the dashboard
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+  // If the user is authenticated and tries to access auth routes, redirect to dashboard
+  if (userId && path.startsWith("/auth/") && path !== "/auth/sign-out") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Continue with the request
+  // If the user is not authenticated and tries to access protected routes
+  if (
+    !userId &&
+    (path.startsWith("/dashboard") ||
+      path.startsWith("/admin") ||
+      path.startsWith("/organization"))
+  ) {
+    return NextResponse.redirect(new URL("/auth/sign-in", request.url));
+  }
+
+  // For admin routes, check if user has admin role
+  if (
+    userId &&
+    ADMIN_ROUTES.some((pattern) => new RegExp(`^${pattern}$`).test(path))
+  ) {
+    try {
+      const user = await clerkClient.users.getUser(userId);
+      const role = user?.publicMetadata?.role as string;
+
+      if (role !== "admin") {
+        // Redirect non-admin users to dashboard
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      // In case of error, redirect to dashboard as a fallback
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  // For legal organization routes, check if user has legal_org role
+  if (
+    userId &&
+    LEGAL_ORG_ROUTES.some((pattern) => new RegExp(`^${pattern}$`).test(path))
+  ) {
+    try {
+      const user = await clerkClient.users.getUser(userId);
+      const role = user?.publicMetadata?.role as string;
+
+      if (role !== "legal_org") {
+        // Redirect non-legal-org users to dashboard
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+    } catch (error) {
+      console.error("Error checking user role:", error);
+      // In case of error, redirect to dashboard as a fallback
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
   return NextResponse.next();
-});
+}
 
 export const config = {
-  matcher: ["/((?!_next/image|_next/static|favicon.ico|.*\\.png$).*)"],
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 };

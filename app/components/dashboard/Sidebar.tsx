@@ -2,8 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { SignOutButton } from "@clerk/nextjs";
 import { motion } from "framer-motion";
+import { useUserContext } from "@/contexts/UserContext";
 import {
   Home,
   FileText,
@@ -14,13 +15,21 @@ import {
   LogOut,
   Mic,
   MessageSquare,
+  Loader2,
 } from "lucide-react";
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const { user, isLoaded } = useUser();
+  const { role, isAdmin, isLegalOrg, loading } = useUserContext();
 
-  const role = (user?.publicMetadata?.role as string) || "user";
+  // Don't render navigation until role is loaded
+  if (loading) {
+    return (
+      <div className="w-64 bg-[#002366] text-white h-screen flex items-center justify-center fixed">
+        <Loader2 className="w-8 h-8 animate-spin text-[#D4AF37]" />
+      </div>
+    );
+  }
 
   // Define navigation links based on user role
   const getNavLinks = () => {
@@ -29,7 +38,7 @@ const Sidebar = () => {
     ];
 
     // Admin-specific links
-    if (role === "admin") {
+    if (isAdmin) {
       return [
         ...commonLinks,
         { href: "/admin/users", label: "Users", icon: Users },
@@ -44,7 +53,7 @@ const Sidebar = () => {
     }
 
     // Legal Organization links
-    if (role === "legal_org") {
+    if (isLegalOrg) {
       return [
         ...commonLinks,
         {
@@ -118,13 +127,12 @@ const Sidebar = () => {
 
       {/* Bottom section with sign out */}
       <div className="p-4 border-t border-white/10">
-        <a
-          href="/sign-out"
-          className="flex items-center p-3 text-gray-300 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <LogOut className="w-5 h-5 mr-3" />
-          <span>Sign Out</span>
-        </a>
+        <Link href="/auth/sign-out">
+          <button className="w-full flex items-center p-3 text-gray-300 hover:bg-white/10 rounded-lg transition-colors">
+            <LogOut className="w-5 h-5 mr-3" />
+            <span>Sign Out</span>
+          </button>
+        </Link>
       </div>
     </div>
   );

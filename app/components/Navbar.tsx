@@ -77,7 +77,7 @@ const Navbar = () => {
 
             <SignedOut>
               <div className="flex space-x-4">
-                <Link href="/sign-in">
+                <Link href="/auth/sign-in">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -86,7 +86,7 @@ const Navbar = () => {
                     Sign In
                   </motion.button>
                 </Link>
-                <Link href="/sign-up">
+                <Link href="/auth/sign-up">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -144,7 +144,7 @@ const Navbar = () => {
                 <SignedOut>
                   <div className="flex flex-col space-y-2 px-6 py-3 border-t border-white/10 mt-2">
                     <Link
-                      href="/sign-in"
+                      href="/auth/sign-in"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <button className="w-full py-2 text-white hover:text-[#D4AF37] transition-colors text-center">
@@ -152,7 +152,7 @@ const Navbar = () => {
                       </button>
                     </Link>
                     <Link
-                      href="/sign-up"
+                      href="/auth/sign-up"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <button className="w-full py-2 bg-[#D4AF37] hover:bg-[#C09A27] text-[#002366] font-medium rounded-lg transition-colors">
